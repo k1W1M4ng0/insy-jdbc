@@ -54,6 +54,25 @@ Dann kopiere ich die (von der Aufgabenstellungh heruntergeladene) Datei *db.prop
 Root-Verzeichnis vom Projekt.
 
 Dadrin ändere ich:  
-- die IP Adresse in der URL zum Container (`docker inspect postgres`): **172.17.0.2**
+- die URL zur IP Adresse vom Container (`docker inspect postgres`): **172.17.0.2**
 - das Passwort zu **Pass2023!** (ist noch von der ersten Übung)
+
+In der *pom.xml* Datei muss ich noch Dependencies für JSON und Postgres hinzufügen:  
+```xml
+<!-- https://mvnrepository.com/artifact/org.json/json -->
+<dependency>
+    <groupId>org.json</groupId>
+    <artifactId>json</artifactId>
+    <version>20231013</version>
+</dependency>
+
+<!-- https://mvnrepository.com/artifact/org.postgresql/postgresql -->
+<dependency>
+    <groupId>org.postgresql</groupId>
+    <artifactId>postgresql</artifactId>
+    <version>42.7.1</version>
+</dependency>
+```
+
+
 
