@@ -1,4 +1,5 @@
 .PHONY: run
 
-run:
-	mvn package && java -cp target/jdbc-*.jar insy.Server
+run: 
+	mvn assembly:assembly -DdescriptorId=jar-with-dependencies
+	java -jar target/jdbc-1.0-SNAPSHOT-jar-with-dependencies.jar 
