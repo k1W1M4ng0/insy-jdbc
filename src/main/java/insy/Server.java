@@ -1,3 +1,5 @@
+package insy;
+
 
 import java.io.*;
 import java.net.InetSocketAddress;
