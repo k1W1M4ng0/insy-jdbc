@@ -10,6 +10,7 @@ import java.sql.*;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.postgresql.Driver;
 
 /**
  * INSY Webshop Server
@@ -26,12 +27,14 @@ public class Server {
      * @throws IOException
      */
     Connection setupDB()  {
-        String rootPath = Thread.currentThread().getContextClassLoader().getResource("").getPath();
         Properties dbProps = new Properties();
         try {
-            dbProps.load(new FileInputStream(rootPath + "db.properties"));
-            //TODO Connect to DB at the url dbProps.getProperty("url")
-            return /* Database connection */ null;
+            dbProps.load(new FileInputStream("db.properties"));
+            Connection conn = DriverManager.getConnection(
+                    dbProps.getProperty("url"),
+                    dbProps
+                    );
+            return conn;
         } catch (Exception throwables) {
             throwables.printStackTrace();
         }
@@ -55,6 +58,7 @@ public class Server {
 
 
     public static void main(String[] args) throws Throwable {
+System.out.println(System.getProperty("java.class.path"));
         Server webshop = new Server();
         webshop.start();
         System.out.println("Webshop running at http://127.0.0.1:" + webshop.port);
@@ -71,22 +75,29 @@ public class Server {
 
             JSONArray res = new JSONArray();
             
-            //TODO read all articles and add them to res
-            JSONObject art1 = new JSONObject();
-            art1.put("id", 1);
-            art1.put("description", "Bleistift");
-            art1.put("price", 0.70);
-            art1.put("amount", 2);
-            res.put(art1);
-            JSONObject art2 = new JSONObject();
-            art2.put("id", 2);
-            art2.put("description", "Papier");
-            art2.put("price", 2);
-            art2.put("amount", 100);
-            res.put(art2);
+            // read all articles and add them to res
+            try (
+                    Statement st = conn.createStatement();
+                    ResultSet set = st.executeQuery("SELECT * FROM articles;")
+                ){
+
+                while(set.next()) {
+                    JSONObject article = new JSONObject();
+                    article.put("id", set.getInt("id"));
+                    article.put("description", set.getString("description"));
+                    article.put("price", set.getInt("price"));
+                    article.put("amount", set.getInt("amount"));
+
+                    res.put(article);
+                }
+            }
+            catch(SQLException ex) {
+                System.err.println(ex);
+                answerRequest(t, ex.toString());
+            }
 
 
-            answerRequest(t,res.toString());
+            answerRequest(t,res.toString(2));
         }
 
     }
