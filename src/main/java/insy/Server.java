@@ -112,14 +112,28 @@ System.out.println(System.getProperty("java.class.path"));
 
             JSONArray res = new JSONArray();
             
-            //TODO read all clients and add them to res
-	    JSONObject cli = new JSONObject();
-            cli.put("id", 1);
-            cli.put("name", "Brein");
-            cli.put("address", "TGM, 1220 Wien");
-            res.put(cli);
+            try (
+                    Statement st = conn.createStatement();
+                    ResultSet set = st.executeQuery("SELECT * FROM clients;")
+                ){
 
-           answerRequest(t,res.toString());
+                while(set.next()) {
+                    JSONObject client = new JSONObject();
+                    client.put("id", set.getInt("id"));
+                    client.put("name", set.getString("name"));
+                    client.put("address", set.getString("address"));
+                    client.put("city", set.getString("city"));
+                    client.put("country", set.getString("country"));
+
+                    res.put(client);
+                }
+            }
+            catch(SQLException ex) {
+                System.err.println(ex);
+                answerRequest(t, ex.toString());
+            }
+
+            answerRequest(t,res.toString(2));
         }
 
     }
