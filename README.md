@@ -137,10 +137,24 @@ GROUP BY orders.id, clients.id;
 #### Place an order
 
 ```sql
+-- Variablen werden mit %d bzw. %s hier in der Dokumentation beschrieben.
+
 -- Zuerst muss die nächste freie order id gefunden werden
 SELECT MAX(id) FROM orders;
+-- Zum Einsetzen eines neuen order_lines muss auch die nächste freie order lines id gefunden werden
+SELECT MAX(id) FROM order_lines;
+
+-- Jetzt setze ich ein neues order ein.
+INSERT INTO orders (id, client_id) VALUES (%d, %d);
 
 -- Dann müssen noch die verfügbaren (amount) Artikel geholt werden.
-SELECT id, amount FROM articles;
+SELECT amount FROM articles WHERE id = %d;
+
+-- Jetzt muss der amount reduziert werden
+UPDATE articles SET amount = amount - %d WHERE id = %d;
+
+-- Zum Schluss wird ein order line inserted
+INSERT INTO order_lines VALUES(%d, %d, %d, %d);
+
 ```
 

@@ -192,7 +192,7 @@ GROUP BY orders.id, clients.id;
         }
     }
 
-   
+    
     /**
      * Handler class to place an order
      */
@@ -207,9 +207,11 @@ GROUP BY orders.id, clients.id;
 
             String response = "";
             int order_id = 1;
+            int order_lines_id = 1;
             try (
                     Statement st = conn.createStatement();
                     ResultSet maxIdSet = st.executeQuery("SELECT MAX(id) FROM orders;");
+                    ResultSet maxOrderLinesIdSet = st.executeQuery("SELECT MAX(id) FROM order_lines;");
                 ){
 
                 // if there are already orders
@@ -217,10 +219,25 @@ GROUP BY orders.id, clients.id;
                     // set the order id to the max + 1
                     order_id = maxIdSet.getInt(1) + 1;
                 }
+                if(maxOrderLinesIdSet.next()) {
+
+                    order_lines_id = maxOrderLinesIdSet.getInt(1) + 1;
+                }
 
                 // Create a new order with this id for client client_id
                 JSONObject orderObject = new JSONObject();
+                // set order id
                 orderObject.put("id", order_id);
+                // set client id
+                orderObject.put("client_id", client_id);
+
+                // insert a new order
+                String insertOrderQuery = String.format(
+                        "INSERT INTO orders (id, client_id) VALUES (%d, %d);",
+                        order_id,
+                        client_id
+                        );
+                st.executeQuery(insertOrderQuery);
 
 
                 for (int i = 1; i <= (params.size()-1) / 2; ++i ){
@@ -228,16 +245,42 @@ GROUP BY orders.id, clients.id;
                     int amount = Integer.parseInt(params.get("amount_"+i));
 
 
-		    //TODO Get the available amount for article article_id
-                    int available = 1000;
+                // Get the available amount for article article_id
+                    int available = 0;
+                    String query = String.format("SELECT amount FROM articles WHERE id = %d;", article_id);
+                    if(query.indexOf('"') != -1) {
+                        throw new IllegalArgumentException("no \" allowed");
+                    }
+                    try(ResultSet availableAmountSet = st.executeQuery(query)) {
+                        if(availableAmountSet.next()) {
+                            available = availableAmountSet.getInt(1);
+                        }
+                    } // catch in the outer catch block
 
 
                     if (available < amount)
                         throw new IllegalArgumentException(String.format("Not enough items of article #%d available", article_id));
 
-		    //TODO Decrease the available amount for article article_id by amount
+                    // Decrease the available amount for article article_id by amount
 
-		    //TODO Insert new order line
+                    String updateArticleAmountQuery = String.format(
+                            "UPDATE articles SET amount = amount - %d WHERE id = %d;",
+                            amount,
+                            article_id
+                            );
+                    st.executeQuery(updateArticleAmountQuery);
+
+                    // Insert new order line
+                    String insertOrderLineQuery = String.format(
+                            "INSERT INTO order_lines VALUES(%d, %d, %d, %d);",
+                            order_lines_id++,
+                            article_id,
+                            order_id,
+                            amount
+                            );
+                    st.executeQuery(insertOrderLineQuery);
+
+                
                 }
 
                 response = String.format("{\"order_id\": %d}", order_id);
