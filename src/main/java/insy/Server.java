@@ -149,18 +149,45 @@ System.out.println(System.getProperty("java.class.path"));
 
             JSONArray res = new JSONArray();
             
-            //TODO read all orders and add them to res
+            // read all orders and add them to res
             // Join orders with clients, order lines, and articles
             // Get the order id, client name, number of lines, and total prize of each order and add them to res
-            JSONObject ord = new JSONObject();
-	    ord.put("id", 1);
-            ord.put("client", "Brein");
-            ord.put("lines", 2);
-            ord.put("price", 3.5);
-            res.put(ord);
+            final String QUERY = """
+SELECT
+    orders.id AS order_id, 
+    clients.name AS client_name,
+    COUNT(orders.id) AS lines,
+    SUM(
+        order_lines.amount * 
+        articles.price
+    )
+FROM order_lines
+JOIN articles ON order_lines.article_id = articles.id
+JOIN orders ON order_lines.order_id = orders.id
+JOIN clients ON orders.client_id = clients.id
+GROUP BY orders.id, clients.id;
+                """;
+            try (
+                    Statement st = conn.createStatement();
+                    ResultSet set = st.executeQuery(QUERY);
+                ){
 
+                while(set.next()) {
+                    JSONObject order = new JSONObject();
+                    order.put("order_id", set.getInt("order_id"));
+                    order.put("client_name", set.getString("client_name"));
+                    order.put("lines", set.getInt("lines"));
+                    order.put("sum", set.getInt("sum"));
 
-            answerRequest(t, res.toString());
+                    res.put(order);
+                }
+            }
+            catch(SQLException ex) {
+                System.err.println(ex);
+                answerRequest(t, ex.toString());
+            }
+
+            answerRequest(t, res.toString(2));
 
         }
     }
@@ -180,12 +207,20 @@ System.out.println(System.getProperty("java.class.path"));
 
             String response = "";
             int order_id = 1;
-            try {
+            try (
+                    Statement st = conn.createStatement();
+                    ResultSet maxIdSet = st.executeQuery("SELECT MAX(id) FROM orders;");
+                ){
 
+                // if there are already orders
+                if(maxIdSet.next()) {
+                    // set the order id to the max + 1
+                    order_id = maxIdSet.getInt(1) + 1;
+                }
 
-                //TODO Get the next free order id
-
-                //TODO Create a new order with this id for client client_id
+                // Create a new order with this id for client client_id
+                JSONObject orderObject = new JSONObject();
+                orderObject.put("id", order_id);
 
 
                 for (int i = 1; i <= (params.size()-1) / 2; ++i ){
@@ -206,7 +241,11 @@ System.out.println(System.getProperty("java.class.path"));
                 }
 
                 response = String.format("{\"order_id\": %d}", order_id);
-            } catch (IllegalArgumentException iae) {
+            } 
+            catch(SQLException ex) {
+                response = String.format("{\"error\":\"%s\"}", ex.getMessage());
+            }
+            catch (IllegalArgumentException iae) {
                 response = String.format("{\"error\":\"%s\"}", iae.getMessage());
             }
 
