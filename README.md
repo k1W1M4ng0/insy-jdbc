@@ -54,7 +54,7 @@ Dann kopiere ich die (von der Aufgabenstellungh heruntergeladene) Datei *db.prop
 Root-Verzeichnis vom Projekt.
 
 Dadrin ändere ich:  
-- die URL zur IP Adresse vom Container (`docker inspect postgres`): **172.17.0.2**
+- die URL zur IP Adresse vom Container (`docker inspect postgres`): **172.17.0.2/webshop**
 - das Passwort zu **Pass2023!** (ist noch von der ersten Übung)
 
 In der *pom.xml* Datei muss ich noch Dependencies für JSON und Postgres hinzufügen:  
@@ -74,5 +74,73 @@ In der *pom.xml* Datei muss ich noch Dependencies für JSON und Postgres hinzuf�
 </dependency>
 ```
 
+Dann noch fürs Builden das Plugin:  
+```xml
+<plugin>
+  <groupId>org.apache.maven.plugins</groupId>
+  <artifactId>maven-assembly-plugin</artifactId>
+  <configuration>
+    <archive>
+      <manifest>
+        <mainClass>insy.Server</mainClass>
+      </manifest>
+    </archive>
+  </configuration>
+</plugin>
+```
 
+Ich hab noch eine Makefile erstellt, um leicht das Programm auszuführen:  
+```Makefile
+.PHONY: run
+
+run: 
+	mvn assembly:assembly -DdescriptorId=jar-with-dependencies
+	java -jar target/jdbc-1.0-SNAPSHOT-jar-with-dependencies.jar 
+```
+
+### 3. Website implementieren
+
+Für jede SQL Query schaue ich erstmal mit `\d tabellenname`, welche Spalten es gibt.
+
+Dann überlege ich mir eine SQL Query.
+
+#### Articles
+
+```sql
+SELECT * FROM articles;
+```
+
+#### Clients
+
+```sql
+SELECT * FROM clients;
+```
+
+#### Orders
+
+```sql
+SELECT
+    orders.id AS order_id, 
+    clients.name AS client_name,
+    COUNT(orders.id) AS lines,
+    SUM(
+        order_lines.amount * 
+        articles.price
+    )
+FROM order_lines
+JOIN articles ON order_lines.article_id = articles.id
+JOIN orders ON order_lines.order_id = orders.id
+JOIN clients ON orders.client_id = clients.id
+GROUP BY orders.id, clients.id;
+```
+
+#### Place an order
+
+```sql
+-- Zuerst muss die nächste freie order id gefunden werden
+SELECT MAX(id) FROM orders;
+
+-- Dann müssen noch die verfügbaren (amount) Artikel geholt werden.
+SELECT id, amount FROM articles;
+```
 
