@@ -211,7 +211,8 @@ GROUP BY orders.id, clients.id;
             try (
                     Statement st = conn.createStatement();
                     ResultSet maxIdSet = st.executeQuery("SELECT MAX(id) FROM orders;");
-                    ResultSet maxOrderLinesIdSet = st.executeQuery("SELECT MAX(id) FROM order_lines;");
+                    Statement st2 = conn.createStatement();
+                    ResultSet maxOrderLinesIdSet = st2.executeQuery("SELECT MAX(id) FROM order_lines;");
                 ){
 
                 // if there are already orders
@@ -237,7 +238,7 @@ GROUP BY orders.id, clients.id;
                         order_id,
                         client_id
                         );
-                st.executeQuery(insertOrderQuery);
+                st.executeUpdate(insertOrderQuery);
 
 
                 for (int i = 1; i <= (params.size()-1) / 2; ++i ){
@@ -268,7 +269,7 @@ GROUP BY orders.id, clients.id;
                             amount,
                             article_id
                             );
-                    st.executeQuery(updateArticleAmountQuery);
+                    st.executeUpdate(updateArticleAmountQuery);
 
                     // Insert new order line
                     String insertOrderLineQuery = String.format(
@@ -278,7 +279,7 @@ GROUP BY orders.id, clients.id;
                             order_id,
                             amount
                             );
-                    st.executeQuery(insertOrderLineQuery);
+                    st.executeUpdate(insertOrderLineQuery);
 
                 
                 }
@@ -286,7 +287,8 @@ GROUP BY orders.id, clients.id;
                 response = String.format("{\"order_id\": %d}", order_id);
             } 
             catch(SQLException ex) {
-                response = String.format("{\"error\":\"%s\"}", ex.getMessage());
+                response = String.format("{\"error\":\"%s\"}", ex.toString());
+                ex.printStackTrace();
             }
             catch (IllegalArgumentException iae) {
                 response = String.format("{\"error\":\"%s\"}", iae.getMessage());
@@ -311,7 +313,7 @@ GROUP BY orders.id, clients.id;
                     "<dt>Alle Artikel anzeigen:</dt><dd><a href=\"http://127.0.0.1:"+port+"/articles\">http://127.0.0.1:"+port+"/articles</a></dd>"+
                     "<dt>Alle Bestellungen anzeigen:</dt><dd><a href=\"http://127.0.0.1:"+port+"/orders\">http://127.0.0.1:"+port+"/orders</a></dd>"+
                     "<dt>Alle Kunden anzeigen:</dt><dd><a href=\"http://127.0.0.1:"+port+"/clients\">http://127.0.0.1:"+port+"/clients</a></dd>"+
-                    "<dt>Bestellung abschicken:</dt><dd><a href=\"http://127.0.0.1:"+port+"/placeOrder?client_id=<client_id>&article_id_1=<article_id_1>&amount_1=<amount_1&article_id_2=<article_id_2>&amount_2=<amount_2>\">http://127.0.0.1:"+port+"/placeOrder?client_id=&lt;client_id>&article_id_1=&lt;article_id_1>&amount_1=&lt;amount_1>&article_id_2=&lt;article_id_2>&amount_2=&lt;amount_2></a></dd>"+
+                    "<dt>Bestellung abschicken:</dt><dd><a href=\"http://127.0.0.1:"+port+"/placeOrder?client_id=1&article_id_1=1&amount_1=1&article_id_2=2&amount_2=2\">http://127.0.0.1:"+port+"/placeOrder?client_id=&lt;client_id>&article_id_1=&l&amount_1=&lt;amount_1>&article_id_2=&lt;article_id_2>&amount_2=&lt;amount_2></a></dd>"+
                     "</dl></body></html>";
 
             answerRequest(t, response);
