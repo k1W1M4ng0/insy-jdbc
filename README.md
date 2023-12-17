@@ -155,6 +155,8 @@ UPDATE articles SET amount = amount - %d WHERE id = %d;
 
 -- Zum Schluss wird ein order line inserted
 INSERT INTO order_lines VALUES(%d, %d, %d, %d);
-
 ```
 
+#### Java
+
+SELECT Queries muss man mit executeQuery() ausführen, INSERT und UPDATE muss man mit executeUpdate() ausführen.
