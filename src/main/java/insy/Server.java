@@ -149,9 +149,29 @@ System.out.println(System.getProperty("java.class.path"));
 
             JSONArray res = new JSONArray();
             
-            //TODO read all orders and add them to res
+            // read all orders and add them to res
             // Join orders with clients, order lines, and articles
             // Get the order id, client name, number of lines, and total prize of each order and add them to res
+            try (
+                    Statement st = conn.createStatement();
+                    ResultSet set = st.executeQuery("SELECT * FROM clients;")
+                ){
+
+                while(set.next()) {
+                    JSONObject client = new JSONObject();
+                    client.put("id", set.getInt("id"));
+                    client.put("name", set.getString("name"));
+                    client.put("address", set.getString("address"));
+                    client.put("city", set.getString("city"));
+                    client.put("country", set.getString("country"));
+
+                    res.put(client);
+                }
+            }
+            catch(SQLException ex) {
+                System.err.println(ex);
+                answerRequest(t, ex.toString());
+            }
             JSONObject ord = new JSONObject();
 	    ord.put("id", 1);
             ord.put("client", "Brein");
@@ -180,12 +200,20 @@ System.out.println(System.getProperty("java.class.path"));
 
             String response = "";
             int order_id = 1;
-            try {
+            try (
+                    Statement st = conn.createStatement();
+                    ResultSet maxIdSet = st.executeQuery("SELECT MAX(id) FROM orders;");
+                ){
 
+                // if there are already orders
+                if(maxIdSet.next()) {
+                    // set the order id to the max + 1
+                    order_id = maxIdSet.getInt(1) + 1;
+                }
 
-                //TODO Get the next free order id
-
-                //TODO Create a new order with this id for client client_id
+                // Create a new order with this id for client client_id
+                JSONObject orderObject = new JSONObject();
+                orderObject.put("id", order_id);
 
 
                 for (int i = 1; i <= (params.size()-1) / 2; ++i ){
@@ -206,7 +234,11 @@ System.out.println(System.getProperty("java.class.path"));
                 }
 
                 response = String.format("{\"order_id\": %d}", order_id);
-            } catch (IllegalArgumentException iae) {
+            } 
+            catch(SQLException ex) {
+                response = String.format("{\"error\":\"%s\"}", ex.getMessage());
+            }
+            catch (IllegalArgumentException iae) {
                 response = String.format("{\"error\":\"%s\"}", iae.getMessage());
             }
 
