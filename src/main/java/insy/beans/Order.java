@@ -3,7 +3,7 @@ package insy.beans;
 public class Order {
     
     private int id;
-    private int clientId;
+    private Client client;
 
     public Order() {
         super();
@@ -17,13 +17,14 @@ public class Order {
         this.id = id;
     }
 
-    public int getClientId() {
-        return clientId;
+    public Client getClient() {
+        return client;
     }
 
-    public void setClientId(int clientId) {
-        this.clientId = clientId;
+    public void setClient(Client client) {
+        this.client = client;
     }
+
 
 
 }

@@ -2,8 +2,8 @@ package insy.beans;
 
 public class OrderLine {
     private int id;
-    private int articleId;
-    private int orderId;
+    private Article article;
+    private Order order;
     private int amount;
 
     public OrderLine() {
@@ -18,28 +18,28 @@ public class OrderLine {
         this.id = id;
     }
 
-    public int getArticleId() {
-        return articleId;
-    }
-
-    public void setArticleId(int articleId) {
-        this.articleId = articleId;
-    }
-
-    public int getOrderId() {
-        return orderId;
-    }
-
-    public void setOrderId(int orderId) {
-        this.orderId = orderId;
-    }
-
     public int getAmount() {
         return amount;
     }
 
     public void setAmount(int amount) {
         this.amount = amount;
+    }
+
+    public Article getArticle() {
+        return article;
+    }
+
+    public void setArticle(Article article) {
+        this.article = article;
+    }
+
+    public Order getOrder() {
+        return order;
+    }
+
+    public void setOrder(Order order) {
+        this.order = order;
     }
 
     
