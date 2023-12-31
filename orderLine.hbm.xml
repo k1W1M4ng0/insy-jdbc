@@ -4,12 +4,13 @@
 "http://hibernate.sourceforge.net/hibernate-mapping-5.3.dtd">  
 
 <hibernate-mapping>  
-    <class name="insy.beans.Order" table="orders">  
+    <class name="insy.beans.OrderLine" table="order_lines">  
         <id name="id" type="integer">  
             <generator class="identity"></generator>  
         </id>  
-        
-        <many-to-one name="client" column="client_id" class="insy.beans.Client"/>
+        <many-to-one name="article" column="article_id" class="insy.beans.Article"></property>  
+        <many-to-one name="order" column="order_id" class="insy.beans.Order"></property>  
+        <property name="amount" type="integer"></property>  
     </class>  
 </hibernate-mapping>  
 
