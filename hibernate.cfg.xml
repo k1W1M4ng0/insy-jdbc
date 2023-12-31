@@ -15,8 +15,10 @@
 
         <property name="show_sql">true</property>
 
-        <!-- TODO -->
-        <mapping resource="employee.hbm.xml"/>  
+        <mapping resource="article.hbm.xml"/>  
+        <mapping resource="client.hbm.xml"/>  
+        <mapping resource="order.hbm.xml"/>  
+        <mapping resource="orderLine.hbm.xml"/>  
     </session-factory>  
   
 </hibernate-configuration> 
