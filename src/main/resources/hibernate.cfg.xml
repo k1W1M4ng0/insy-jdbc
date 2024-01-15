@@ -7,7 +7,7 @@
   
     <session-factory>  
         <property name="hbm2ddl.auto">update</property>  
-        <property name="dialect">org.hibernate.dialect.ProgreSQLDialect</property>  
+        <property name="dialect">org.hibernate.dialect.PostgreSQLDialect</property>  
         <property name="connection.url">jdbc:postgresql://172.17.0.2/webshop</property>  
         <property name="connection.username">postgres</property>  
         <property name="connection.password">Pass2023!</property>  

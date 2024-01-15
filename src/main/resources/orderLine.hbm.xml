@@ -8,8 +8,8 @@
         <id name="id" type="integer">  
             <generator class="identity"></generator>  
         </id>  
-        <many-to-one name="article" column="article_id" class="insy.beans.Article"></property>  
-        <many-to-one name="order" column="order_id" class="insy.beans.Order"></property>  
+        <many-to-one name="article" column="article_id" class="insy.beans.Article"></many-to-one>  
+        <many-to-one name="order" column="order_id" class="insy.beans.Order"></many-to-one>  
         <property name="amount" type="integer"></property>  
     </class>  
 </hibernate-mapping>  
