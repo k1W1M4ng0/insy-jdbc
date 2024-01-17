@@ -8,6 +8,7 @@ import java.util.*;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
+import org.hibernate.query.Query;
 import org.json.*;
 import java.sql.*;
 
@@ -111,11 +112,11 @@ System.out.println("classpath: " + System.getProperty("java.class.path"));
             Session session = Server.factory.openSession();
             session.beginTransaction();
             
-            List<Client> articles = session.createSelectionQuery("from Client", Client.class)
+            List<Client> clients = session.createSelectionQuery("from Client", Client.class)
                 .list();
 
             session.getTransaction().commit();
-            JSONArray res = new JSONArray(articles);
+            JSONArray res = new JSONArray(clients);
             answerRequest(t, res.toString(2));
         }
 
@@ -128,13 +129,14 @@ System.out.println("classpath: " + System.getProperty("java.class.path"));
     class OrdersHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            Connection conn = setupDB();
+            Session session = Server.factory.openSession();
+            session.beginTransaction();
+            
 
-            JSONArray res = new JSONArray();
             
             // read all orders and add them to res
             // Join orders with clients, order lines, and articles
-            // Get the order id, client name, number of lines, and total prize of each order and add them to res
+            // Get the order id, client name, number of lines, and total price of each order and add them to res
             final String QUERY = """
 SELECT
     orders.id AS order_id, 
@@ -150,28 +152,25 @@ JOIN orders ON order_lines.order_id = orders.id
 JOIN clients ON orders.client_id = clients.id
 GROUP BY orders.id, clients.id;
                 """;
-            try (
-                    Statement st = conn.createStatement();
-                    ResultSet set = st.executeQuery(QUERY);
-                ){
 
-                while(set.next()) {
-                    JSONObject order = new JSONObject();
-                    order.put("order_id", set.getInt("order_id"));
-                    order.put("client_name", set.getString("client_name"));
-                    order.put("lines", set.getInt("lines"));
-                    order.put("sum", set.getInt("sum"));
+            // execute the sql query
+            var results = 
+                session.createNativeQuery(QUERY, Object[].class)
+                .list();
 
-                    res.put(order);
-                }
-            }
-            catch(SQLException ex) {
-                System.err.println(ex);
-                answerRequest(t, ex.toString());
+            // convert to OrderJoined and save it in JSONArray (for converting to JSON)
+            JSONArray res = new JSONArray();
+            for(var obj : results) {
+                JSONObject order = new JSONObject();
+                order.put("id", (Integer)obj[0]);
+                order.put("name", (String)obj[1]);
+                order.put("amount", (Long)obj[2]);
+                order.put("price", (Long)obj[3]);
+                res.put(order);
             }
 
+            session.getTransaction().commit();
             answerRequest(t, res.toString(2));
-
         }
     }
 
