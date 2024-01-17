@@ -89,20 +89,13 @@ System.out.println("classpath: " + System.getProperty("java.class.path"));
     class ArticlesHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            // Connection conn = setupDB();
             Session session = Server.factory.openSession();
             session.beginTransaction();
-            System.out.println("from Article");
             
             List<Article> articles = session.createSelectionQuery("from Article", Article.class)
                 .list();
 
-            System.out.println("fin a select");
-            System.out.println("list size " +articles.size());
             session.getTransaction().commit();
-            for(var a : articles) {
-                System.out.println(a.getDescription());
-            }
             JSONArray res = new JSONArray(articles);
             answerRequest(t, res.toString(2));
         }
@@ -115,32 +108,15 @@ System.out.println("classpath: " + System.getProperty("java.class.path"));
     class ClientsHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            Connection conn = setupDB();
-
-            JSONArray res = new JSONArray();
+            Session session = Server.factory.openSession();
+            session.beginTransaction();
             
-            try (
-                    Statement st = conn.createStatement();
-                    ResultSet set = st.executeQuery("SELECT * FROM clients;")
-                ){
+            List<Client> articles = session.createSelectionQuery("from Client", Client.class)
+                .list();
 
-                while(set.next()) {
-                    JSONObject client = new JSONObject();
-                    client.put("id", set.getInt("id"));
-                    client.put("name", set.getString("name"));
-                    client.put("address", set.getString("address"));
-                    client.put("city", set.getString("city"));
-                    client.put("country", set.getString("country"));
-
-                    res.put(client);
-                }
-            }
-            catch(SQLException ex) {
-                System.err.println(ex);
-                answerRequest(t, ex.toString());
-            }
-
-            answerRequest(t,res.toString(2));
+            session.getTransaction().commit();
+            JSONArray res = new JSONArray(articles);
+            answerRequest(t, res.toString(2));
         }
 
     }
