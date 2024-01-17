@@ -9,7 +9,7 @@
             <generator class="identity"></generator>  
         </id>  
         <property name="description" type="string"></property>  
-        <property name="price" type="string"></property>  
-        <property name="amount" type="string"></property>  
+        <property name="price" type="integer"></property>  
+        <property name="amount" type="integer"></property>  
     </class>  
 </hibernate-mapping>  

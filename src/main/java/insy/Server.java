@@ -4,18 +4,30 @@ package insy;
 import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.*;
+
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.cfg.Configuration;
 import org.json.*;
 import java.sql.*;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+
+import insy.beans.Article;
+import insy.beans.Client;
+import insy.beans.Order;
+import insy.beans.OrderLine;
+
 import org.postgresql.Driver;
 
 /**
  * INSY Webshop Server
  */
 public class Server {
+
+    private static SessionFactory factory;
 
     /**
      * Port to bind to for HTTP service
@@ -46,6 +58,12 @@ public class Server {
      * @throws IOException
      */
     public void start() throws IOException {
+        Configuration configuration = new Configuration()
+            .configure(); // hibernate.cfg.xml verwenden
+        // session factory erstellen
+        Server.factory = configuration.buildSessionFactory();
+
+
         HttpServer server = HttpServer.create(new InetSocketAddress(port), 0);
         server.createContext("/articles", new ArticlesHandler());
         server.createContext("/clients", new ClientsHandler());
@@ -58,7 +76,7 @@ public class Server {
 
 
     public static void main(String[] args) throws Throwable {
-System.out.println(System.getProperty("java.class.path"));
+System.out.println("classpath: " + System.getProperty("java.class.path"));
         Server webshop = new Server();
         webshop.start();
         System.out.println("Webshop running at http://127.0.0.1:" + webshop.port);
@@ -71,33 +89,22 @@ System.out.println(System.getProperty("java.class.path"));
     class ArticlesHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange t) throws IOException {
-            Connection conn = setupDB();
-
-            JSONArray res = new JSONArray();
+            // Connection conn = setupDB();
+            Session session = Server.factory.openSession();
+            session.beginTransaction();
+            System.out.println("from Article");
             
-            // read all articles and add them to res
-            try (
-                    Statement st = conn.createStatement();
-                    ResultSet set = st.executeQuery("SELECT * FROM articles;")
-                ){
+            List<Article> articles = session.createSelectionQuery("from Article", Article.class)
+                .list();
 
-                while(set.next()) {
-                    JSONObject article = new JSONObject();
-                    article.put("id", set.getInt("id"));
-                    article.put("description", set.getString("description"));
-                    article.put("price", set.getInt("price"));
-                    article.put("amount", set.getInt("amount"));
-
-                    res.put(article);
-                }
+            System.out.println("fin a select");
+            System.out.println("list size " +articles.size());
+            session.getTransaction().commit();
+            for(var a : articles) {
+                System.out.println(a.getDescription());
             }
-            catch(SQLException ex) {
-                System.err.println(ex);
-                answerRequest(t, ex.toString());
-            }
-
-
-            answerRequest(t,res.toString(2));
+            JSONArray res = new JSONArray(articles);
+            answerRequest(t, res.toString(2));
         }
 
     }
