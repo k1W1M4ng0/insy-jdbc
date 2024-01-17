@@ -246,14 +246,158 @@ public class Server {
         Server.factory = configuration.buildSessionFactory();
 ```
 
+### SELECT
+
+Um einfache SELECT Abfragen zu machen, wie z.B. für die Clients, 
+muss man `session.createSelectionQuery` und ein HQL (Hibernate Query Language)
+Statement ausführen.
+
+```java
+            Session session = Server.factory.openSession();
+            session.beginTransaction();
+            
+            List<Client> articles = session.createSelectionQuery("from Client", Client.class)
+                .list();
+
+            session.getTransaction().commit();
+            JSONArray res = new JSONArray(articles);
+            answerRequest(t, res.toString(2));
+```
+
+
 ### Articles, Bestellungen, Kunden
+
+HQL:  
+- articles: "from Article"
+- clients: "from Client"
+
+Für orders habe ich einfach die bestehende SQL Query verwendet, und als Klasse `Object[].class` angegeben.
+
+Ein Problem war, dass Hibernate mir die zwei hinteren Spalten als long, nicht als int zurückgegeben hat,
+dies habe ich herausgefunden mit:
+
+```java
+            JSONArray res = new JSONArray();
+            System.out.println("res size: " + results.size());
+            for(var obj : results) {
+                System.out.println("obj len: " + obj.length);
+                System.out.println((Integer)obj[0]);
+                System.out.println((String)obj[1]);
+                System.out.println(obj[2].getClass());
+                System.out.println(obj[3].getClass());
+                // OrderJoined orderJoined = new OrderJoined(
+                //         (Integer)obj[0],
+                //         (String)obj[1],
+                //         (Integer)obj[2],
+                //         (Integer)obj[3]
+                //         );
+                // res.put(orderJoined);
+            }
+```
+
+Anschließend konnte ich OrderHandler so implementieren:  
+```java
+            // this record saves the result
+            record OrderJoined (int id, String clientName, long orders, long price) {};
+
+            Session session = Server.factory.openSession();
+            session.beginTransaction();
+            
+
+            
+            // read all orders and add them to res
+            // Join orders with clients, order lines, and articles
+            // Get the order id, client name, number of lines, and total price of each order and add them to res
+            final String QUERY = """
+SELECT
+    orders.id AS order_id, 
+    clients.name AS client_name,
+    COUNT(orders.id) AS lines,
+    SUM(
+        order_lines.amount * 
+        articles.price
+    )
+FROM order_lines
+JOIN articles ON order_lines.article_id = articles.id
+JOIN orders ON order_lines.order_id = orders.id
+JOIN clients ON orders.client_id = clients.id
+GROUP BY orders.id, clients.id;
+                """;
+
+            // execute the sql query
+            var results = 
+                session.createNativeQuery(QUERY, Object[].class)
+                .list();
+
+            // convert to OrderJoined and save it in JSONArray (for converting to JSON)
+            JSONArray res = new JSONArray();
+            for(var obj : results) {
+                OrderJoined orderJoined = new OrderJoined(
+                        (Integer)obj[0],
+                        (String)obj[1],
+                        (Long)obj[2],
+                        (Long)obj[3]
+                        );
+                res.put(orderJoined);
+            }
+
+            session.getTransaction().commit();
+            answerRequest(t, res.toString(2));
+```
+
+Dies hat mir aber als Antwort kein JSON zurückgegeben, weshalb ich es auf folgendes geändert habe:
+
+```java
+            Session session = Server.factory.openSession();
+            session.beginTransaction();
+            
+
+            
+            // read all orders and add them to res
+            // Join orders with clients, order lines, and articles
+            // Get the order id, client name, number of lines, and total price of each order and add them to res
+            final String QUERY = """
+SELECT
+    orders.id AS order_id, 
+    clients.name AS client_name,
+    COUNT(orders.id) AS lines,
+    SUM(
+        order_lines.amount * 
+        articles.price
+    )
+FROM order_lines
+JOIN articles ON order_lines.article_id = articles.id
+JOIN orders ON order_lines.order_id = orders.id
+JOIN clients ON orders.client_id = clients.id
+GROUP BY orders.id, clients.id;
+                """;
+
+            // execute the sql query
+            var results = 
+                session.createNativeQuery(QUERY, Object[].class)
+                .list();
+
+            // convert to OrderJoined and save it in JSONArray (for converting to JSON)
+            JSONArray res = new JSONArray();
+            for(var obj : results) {
+                JSONObject order = new JSONObject();
+                order.put("id", (Integer)obj[0]);
+                order.put("name", (String)obj[1]);
+                order.put("amount", (Long)obj[2]);
+                order.put("price", (Long)obj[3]);
+                res.put(order);
+            }
+
+            session.getTransaction().commit();
+            answerRequest(t, res.toString(2));
+```
 
 ### Bestellung abschicken
 
 ## Quellen
 
 - [mvn Ordner zum Classpath hinzufügen](https://stackoverflow.com/questions/9063296/how-can-i-write-maven-build-to-add-resources-to-classpath)
-- https://www.javatpoint.com/example-to-create-hibernate-application-in-eclipse-ide#step4
+- [Hibernate Quickstart Tutorial](https://www.javatpoint.com/example-to-create-hibernate-application-in-eclipse-ide)
 - [Hibernate Community Documentation (for Mapping)](https://docs.jboss.org/hibernate/core/3.3/reference/en/html/mapping.html)
-https://docs.jboss.org/hibernate/core/3.3/reference/en/html/objectstate.html#objectstate-querying
-https://hibernate.org/orm/documentation/6.4/
+- [Hibernate Documentation](https://hibernate.org/orm/documentation/6.4/)
+- [Hibernate Documentation HQL](https://docs.jboss.org/hibernate/orm/6.4/querylanguage/html_single/Hibernate_Query_Language.html#syntax)
