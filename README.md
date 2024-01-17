@@ -160,3 +160,100 @@ INSERT INTO order_lines VALUES(%d, %d, %d, %d);
 #### Java
 
 SELECT Queries muss man mit executeQuery() ausführen, INSERT und UPDATE muss man mit executeUpdate() ausführen.
+
+# INSY WS03 ORM
+
+## Praxis
+
+Zuerst habe ich mir in der *pom.xml* Datei die Dependency für Hibernate hinzugefügt.
+
+### XML Dateien
+
+Dann habe ich mir die Datei *hibernate.cfg.xml* erstellt, mit den entsprechenden Werten:  
+```xml
+<?xml version='1.0' encoding='UTF-8'?>  
+<!DOCTYPE hibernate-configuration PUBLIC  
+          "-//Hibernate/Hibernate Configuration DTD 5.3//EN"  
+          "http://hibernate.sourceforge.net/hibernate-configuration-5.3.dtd">  
+  
+<hibernate-configuration>  
+  
+    <session-factory>  
+        <property name="hbm2ddl.auto">update</property>  
+        <property name="dialect">org.hibernate.dialect.ProgressDialect</property>  
+        <property name="connection.url">jdbc:postgresql://172.17.0.2/webshop</property>  
+        <property name="connection.username">postgres</property>  
+        <property name="connection.password">Pass2023!</property>  
+        <property name="connection.driver_class">org.postgresql.Driver</property>  
+
+        <property name="show_sql">true</property>
+
+        <mapping resource="article.hbm.xml"/>  
+        <mapping resource="client.hbm.xml"/>  
+        <mapping resource="order.hbm.xml"/>  
+        <mapping resource="orderLine.hbm.xml"/>  
+    </session-factory>  
+  
+</hibernate-configuration> 
+```
+
+Dann habe ich die Mappings erstellt:
+
+TODO
+
+Im Code habe ich folgendes hinzugefügt:  
+```java
+Configuration configuration = new Configuration()
+    .configure();
+Server.factory = configuration.buildSessionFactory();
+```
+
+Damit soll die hibernate.cfg.xml geladen werden. Dafür muss man aber die Dateien als Resource deklarieren.
+
+Die Dateien waren bei mir im Wurzelverzeichnis des Projektes, ich habe dann ein Verzeichnis *src/main/resources*
+erstellt und die Dateien dorthin gegeben. Dann in der *pom.xml*:  
+```xml
+  <build>
+      <resources>
+          <resource>
+              <directory>src/main/resources</directory>
+          </resource>
+      </resources>
+    <pluginManagement>
+
+
+        ... (hier sind plugins)
+
+
+  </build>
+```
+
+Jetzt können die xml Dateien als Ressource gefunden werden und werden geladen.
+
+### SessionFactory
+
+```java
+public class Server {
+
+    private static SessionFactory factory;
+
+...
+
+    public void start() throws IOException {
+        Configuration configuration = new Configuration()
+            .configure(); // hibernate.cfg.xml verwenden
+        // session factory erstellen
+        Server.factory = configuration.buildSessionFactory();
+```
+
+### Articles, Bestellungen, Kunden
+
+### Bestellung abschicken
+
+## Quellen
+
+- [mvn Ordner zum Classpath hinzufügen](https://stackoverflow.com/questions/9063296/how-can-i-write-maven-build-to-add-resources-to-classpath)
+- https://www.javatpoint.com/example-to-create-hibernate-application-in-eclipse-ide#step4
+- [Hibernate Community Documentation (for Mapping)](https://docs.jboss.org/hibernate/core/3.3/reference/en/html/mapping.html)
+https://docs.jboss.org/hibernate/core/3.3/reference/en/html/objectstate.html#objectstate-querying
+https://hibernate.org/orm/documentation/6.4/
