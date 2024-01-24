@@ -6,7 +6,7 @@
 <hibernate-mapping>  
     <class name="insy.beans.Order" table="orders">  
         <id name="id" type="integer">  
-            <generator class="identity"></generator>  
+            <generator class="native"></generator>  
         </id>  
         
         <many-to-one name="client" column="client_id" class="insy.beans.Client"/>
