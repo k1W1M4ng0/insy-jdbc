@@ -51,6 +51,7 @@ public class Server {
         server.createContext("/clients", new ClientsHandler());
         server.createContext("/placeOrder", new PlaceOrderHandler());
         server.createContext("/orders", new OrdersHandler());
+        server.createContext("/stats", new StatsHandler());
         server.createContext("/", new IndexHandler());
 
         server.start();
@@ -330,11 +331,75 @@ GROUP BY orders.id, clients.id;
                     "<dt>Alle Bestellungen anzeigen:</dt><dd><a href=\"http://127.0.0.1:"+port+"/orders\">http://127.0.0.1:"+port+"/orders</a></dd>"+
                     "<dt>Alle Kunden anzeigen:</dt><dd><a href=\"http://127.0.0.1:"+port+"/clients\">http://127.0.0.1:"+port+"/clients</a></dd>"+
                     "<dt>Bestellung abschicken:</dt><dd><a href=\"http://127.0.0.1:"+port+"/placeOrder?client_id=1&article_id_1=1&amount_1=1&article_id_2=2&amount_2=2\">http://127.0.0.1:"+port+"/placeOrder?client_id=&lt;client_id>&article_id_1=&l&amount_1=&lt;amount_1>&article_id_2=&lt;article_id_2>&amount_2=&lt;amount_2></a></dd>"+
+                    "<dt>stats:</dt><dd><a href=\"http://127.0.0.1:"+port+"/stats\">http://127.0.0.1:"+port+"/stats</a></dd>"+
                     "</dl></body></html>";
 
             answerRequest(t, response);
         }
 
+    }
+
+    class StatsHandler implements HttpHandler {
+        @Override
+        public void handle(HttpExchange t) throws IOException {
+            Connection conn = setupDB();
+            JSONObject stats = new JSONObject();
+
+            // start transaction
+            try {
+                conn.setAutoCommit(false);
+                // prevent phantom reads
+                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+
+            // get all countries
+            List<String> countries = new ArrayList<>();
+            try (
+                    Statement statement = conn.createStatement();
+                    ResultSet countrySet = statement.executeQuery("SELECT DISTINCT country FROM clients;");
+                ) {
+                    while(countrySet.next()) {
+                        countries.add(countrySet.getString("country"));
+                    }
+                }
+            catch(SQLException e) {
+                e.printStackTrace();
+            }
+
+            for(String country : countries) {
+                final String query = "SELECT orders.* FROM orders JOIN clients ON orders.client_id = clients.id" +
+                    " WHERE clients.country = '" + country + "'";
+                JSONArray ordersForCountry = new JSONArray();
+                try (
+                        ResultSet result = conn.createStatement()
+                            .executeQuery(query);
+                    ) {
+                        while(result.next()) {
+                            JSONObject order = new JSONObject();
+
+                            order.put("id", result.getInt("id"));
+                            order.put("created at", result.getTimestamp("created_at"));
+                            order.put("client id", result.getInt("client_id"));
+
+                            ordersForCountry.put(order);
+                        }
+                    }
+                catch(SQLException e) {
+                    e.printStackTrace();
+                }
+                stats.put(country, ordersForCountry);
+            }
+            // commit transaction
+            try {
+                conn.commit();
+            }
+            catch(SQLException e) {
+                e.printStackTrace();
+            }
+            answerRequest(t, stats.toString(2));
+        }
     }
 
 
