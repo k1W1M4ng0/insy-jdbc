@@ -201,6 +201,14 @@ GROUP BY orders.id, clients.id;
         public void handle(HttpExchange t) throws IOException {
 
             Connection conn = setupDB();
+            // start transaction
+            try {
+                conn.setAutoCommit(false);
+                // prevent phantom reads
+                conn.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
             Map <String,String> params  = queryToMap(t.getRequestURI().getQuery());
 
             int client_id = Integer.parseInt(params.get("client_id"));
@@ -214,6 +222,7 @@ GROUP BY orders.id, clients.id;
                     Statement st2 = conn.createStatement();
                     ResultSet maxOrderLinesIdSet = st2.executeQuery("SELECT MAX(id) FROM order_lines;");
                 ){
+                Thread.sleep(1000);
 
                 // if there are already orders
                 if(maxIdSet.next()) {
@@ -239,6 +248,8 @@ GROUP BY orders.id, clients.id;
                         client_id
                         );
                 st.executeUpdate(insertOrderQuery);
+                // commit transaction
+                conn.commit();
 
 
                 for (int i = 1; i <= (params.size()-1) / 2; ++i ){
@@ -284,14 +295,19 @@ GROUP BY orders.id, clients.id;
                 
                 }
 
+                // commit the order
+                conn.commit();
+
                 response = String.format("{\"order_id\": %d}", order_id);
             } 
-            catch(SQLException ex) {
+            catch(SQLException | IllegalArgumentException | InterruptedException ex) {
+                try {
+                    conn.rollback();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
                 response = String.format("{\"error\":\"%s\"}", ex.toString());
                 ex.printStackTrace();
-            }
-            catch (IllegalArgumentException iae) {
-                response = String.format("{\"error\":\"%s\"}", iae.getMessage());
             }
 
             answerRequest(t, response);
