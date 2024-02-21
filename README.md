@@ -236,7 +236,29 @@ Dies kann man setzen mit `SET TRANSACTION ISOLATION LEVEL x`
 
 ### Locking
 
+Postgres implementiert Isolation Levels mit MVCC (Multi Version Concurrency Control),
+wobei Snapshots der Daten erstellt werden. Dies ist oft nicht ausreichend.
 
+Deswegen gibt es Locking. Es blockiert gezielt Objekte (Tabellen oder Zeilen) für andere Transaktionen.
+
+Locks sind an die aktuelle Transaktion gebunden.
+
+#### Table-level locks
+
+Es gibt 8 Arten von Table-level locks
+
+Sie werden von postgres implizit (automatisch durch DBMS) verwendet.
+
+Man kann sie auch manuell mit `LOCK TABLE` setzen.
+
+#### Row-level locks
+
+Es gibt 4 Arten von Row-level locks:
+
+- FOR UPDATE: 'Ich möchte diese Zeile ändern'
+- FOR SHARE: 'Ich möchte, dass diese Zeile nicht geändert wird'
+- FOR NO KEY UPDATE: 'Ich möchte keine Schlüssel ändern.'
+- FOR KEY SHARE: 'Ich möchte, dass keine Schlüssel geändert werden'
 
 ## Praxis
 
